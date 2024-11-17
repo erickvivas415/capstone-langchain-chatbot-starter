@@ -1,7 +1,24 @@
 from flask import Flask, render_template
 from flask import request, jsonify, abort
+from langchain_core.prompts import PromptTemplate
+from langchain.chains import LLMChain
 
 from langchain.llms import Cohere
+
+import os
+from dotenv import load_dotenv
+
+from langchain.prompts import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+
+
+
+load_dotenv()
+
+api_key = os.getenv("COHERE_API_KEY")
 
 app = Flask(__name__)
 
@@ -15,8 +32,22 @@ def search_knowledgebase(message):
     return sources
 
 def answer_as_chatbot(message):
-    # TODO: Write your code here
-    return ""
+    # Define the template
+    template = """Question: {question}
+    Answer as if you are a chatbot helping a human user."""
+    
+    # Ensure the template matches input_variables
+    prompt = PromptTemplate(template=template, input_variables=["question"])
+    
+    # Instantiate the LLM (Ensure the API key is correctly configured)
+    llm = Cohere(cohere_api_key=os.getenv("COHERE_API_KEY"))
+    
+    # Create the LLMChain
+    llm_chain = LLMChain(prompt=prompt, llm=llm)
+    
+    # Run the chain with the correct variable name
+    response = llm_chain.run({"question": message})  # Map 'message' to 'question'
+    return response
 
 @app.route('/kbanswer', methods=['POST'])
 def kbanswer():
