@@ -64,6 +64,8 @@ function displayMessage(sender, message) {
         messageDiv.innerHTML += message;
     }
 
+
+
     // Create a timestamp element
     let timestamp = document.createElement('span');
     timestamp.classList.add('timestamp');
@@ -77,6 +79,14 @@ function displayMessage(sender, message) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
+function clearChat() {
+    document.getElementById('chat-container').replaceChildren();
+}
+
 // Handle button click event
 let sendButton = document.getElementById('send-btn');
 sendButton.addEventListener('click', sendMessage);
+
+// Hanlde clear button event
+let clearButton = document.getElementById('clear-btn');
+clearButton.addEventListener('click', clearChat);
