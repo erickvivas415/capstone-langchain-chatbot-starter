@@ -25,3 +25,39 @@
     border-radius: 5px;
     border: 1px solid #ccc;
 }
+
+.chat-container {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    height: 300px; /* Adjust based on preference */
+    overflow-y: auto;
+    background-color: #f9f9f9;
+}
+
+.user-message {
+    text-align: right;
+    background-color: #e7f3fe;
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 10px;
+}
+
+.assistant-message {
+    text-align: left;
+    background-color: #eaf7ea;
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 10px;
+}
+
+.timestamp {
+    font-size: 0.8em;
+    color: gray;
+}
+
+.loading-message {
+    text-align: center;
+    font-style: italic;
+    color: #555;
+}

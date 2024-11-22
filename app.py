@@ -1,33 +1,25 @@
-from flask import Flask, render_template
-from flask import request, jsonify, abort
+from flask import Flask, render_template, request, jsonify
 from langchain.prompts import PromptTemplate
-
 from langchain.chains import LLMChain
-
 from langchain.llms import Cohere
-
 from langchain.chains import RetrievalQA
 from langchain.embeddings import CohereEmbeddings
 from langchain.vectorstores import Chroma
-
 import os
 from dotenv import load_dotenv
 
-from langchain.prompts import (
-    ChatPromptTemplate,
-    SystemMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-)
-
-
-
 load_dotenv()
 
+app = Flask(__name__)
+
+# Load the Cohere API key
 api_key = os.getenv("COHERE_API_KEY")
+if not api_key:
+    raise EnvironmentError("COHERE_API_KEY is missing. Ensure it is set in the environment variables.")
 
 def load_db():
     try:
-        embeddings = CohereEmbeddings(cohere_api_key=os.environ["COHERE_API_KEY"])
+        embeddings = CohereEmbeddings(cohere_api_key=api_key)
         vectordb = Chroma(persist_directory='db', embedding_function=embeddings)
         qa = RetrievalQA.from_chain_type(
             llm=Cohere(),
@@ -37,72 +29,91 @@ def load_db():
         )
         return qa
     except Exception as e:
-        print("Error:", e)
+        print(f"Error loading the database: {e}")
+        return None
 
 qa = load_db()
-
-app = Flask(__name__)
+if qa is None:
+    raise RuntimeError("Failed to initialize the QA system.")
 
 def answer_from_knowledgebase(message):
-    res = qa({"query": message})
-    return res['result']
+    try:
+        if not message or not isinstance(message, str):
+            raise ValueError("Invalid input. Please provide a non-empty string.")
+        
+        res = qa({"query": message})
+        return res.get('result', "No answer found.")
+    except Exception as e:
+        print(f"Error answering from knowledge base: {e}")
+        return "An error occurred while retrieving the answer."
 
 def search_knowledgebase(message):
-    res = qa({"query": message})
-    sources = ""
-    for count, source in enumerate(res['source_documents'],1):
-        sources += "Source " + str(count) + "\n"
-        sources += source.page_content + "\n"
-    return sources
+    try:
+        if not message or not isinstance(message, str):
+            raise ValueError("Invalid input. Please provide a non-empty string.")
+
+        res = qa({"query": message})
+        sources = ""
+        for count, source in enumerate(res.get('source_documents', []), 1):
+            sources += f"Source {count}\n{source.page_content}\n"
+        return sources if sources else "No sources found."
+    except Exception as e:
+        print(f"Error searching the knowledge base: {e}")
+        return "An error occurred while searching the knowledge base."
 
 def answer_as_chatbot(message):
-    # Define the template
-    template = """Question: {question}
-    Answer as if you are a chatbot helping a human user."""
-    
-    # Ensure the template matches input_variables
-    prompt = PromptTemplate(template=template, input_variables=["question"])
-    
-    # Instantiate the LLM (Ensure the API key is correctly configured)
-    llm = Cohere(cohere_api_key=os.getenv("COHERE_API_KEY"))
-    
-    # Create the LLMChain
-    llm_chain = LLMChain(prompt=prompt, llm=llm)
-    
-    # Run the chain with the correct variable name
-    response = llm_chain.run({"question": message})  # Map 'message' to 'question'
-    return response
+    try:
+        if not message or not isinstance(message, str):
+            raise ValueError("Invalid input. Please provide a non-empty string.")
+
+        template = """Question: {question}
+        Answer as if you are a chatbot helping a human user."""
+        prompt = PromptTemplate(template=template, input_variables=["question"])
+        llm = Cohere(cohere_api_key=api_key)
+        llm_chain = LLMChain(prompt=prompt, llm=llm)
+        return llm_chain.run({"question": message})
+    except Exception as e:
+        print(f"Error answering as chatbot: {e}")
+        return "An error occurred while generating the chatbot response."
 
 @app.route('/kbanswer', methods=['POST'])
 def kbanswer():
-    message = request.json['message']
-    
-    # Generate a response
-    response_message = answer_from_knowledgebase(message)
-    
-    # Return the response as JSON
-    return jsonify({'message': response_message}), 200
-    return 
+    try:
+        message = request.json.get('message')
+        if not message:
+            return jsonify({'error': 'Message is required.'}), 400
+        
+        response_message = answer_from_knowledgebase(message)
+        return jsonify({'message': response_message}), 200
+    except Exception as e:
+        print(f"Error in /kbanswer endpoint: {e}")
+        return jsonify({'error': 'An unexpected error occurred.'}), 500
 
 @app.route('/search', methods=['POST'])
 def search():    
-    message = request.json['message']
-    
-    # Generate a response
-    response_message = search_knowledgebase(message)
-    
-    # Return the response as JSON
-    return jsonify({'message': response_message}), 200
+    try:
+        message = request.json.get('message')
+        if not message:
+            return jsonify({'error': 'Message is required.'}), 400
+        
+        response_message = search_knowledgebase(message)
+        return jsonify({'message': response_message}), 200
+    except Exception as e:
+        print(f"Error in /search endpoint: {e}")
+        return jsonify({'error': 'An unexpected error occurred.'}), 500
 
 @app.route('/answer', methods=['POST'])
 def answer():
-    message = request.json['message']
-    
-    # Generate a response
-    response_message = answer_as_chatbot(message)
-    
-    # Return the response as JSON
-    return jsonify({'message': response_message}), 200
+    try:
+        message = request.json.get('message')
+        if not message:
+            return jsonify({'error': 'Message is required.'}), 400
+        
+        response_message = answer_as_chatbot(message)
+        return jsonify({'message': response_message}), 200
+    except Exception as e:
+        print(f"Error in /answer endpoint: {e}")
+        return jsonify({'error': 'An unexpected error occurred.'}), 500
 
 @app.route("/")
 def index():
