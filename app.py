@@ -17,6 +17,7 @@ api_key = os.getenv("COHERE_API_KEY")
 if not api_key:
     raise EnvironmentError("COHERE_API_KEY is missing. Ensure it is set in the environment variables.")
 
+# Load the db
 def load_db():
     try:
         embeddings = CohereEmbeddings(cohere_api_key=api_key)
@@ -33,10 +34,12 @@ def load_db():
         return None
 
 qa = load_db()
+# If db doesnt exist
 if qa is None:
     raise RuntimeError("Failed to initialize the QA system.")
 
 def answer_from_knowledgebase(message):
+    # Handle error if no data was entered
     try:
         if not message or not isinstance(message, str):
             raise ValueError("Invalid input. Please provide a non-empty string.")
@@ -48,6 +51,7 @@ def answer_from_knowledgebase(message):
         return "An error occurred while retrieving the answer."
 
 def search_knowledgebase(message):
+    # Handle error if no data was entered
     try:
         if not message or not isinstance(message, str):
             raise ValueError("Invalid input. Please provide a non-empty string.")
@@ -62,6 +66,7 @@ def search_knowledgebase(message):
         return "An error occurred while searching the knowledge base."
 
 def answer_as_chatbot(message):
+    # Handle error if no data was entered
     try:
         if not message or not isinstance(message, str):
             raise ValueError("Invalid input. Please provide a non-empty string.")

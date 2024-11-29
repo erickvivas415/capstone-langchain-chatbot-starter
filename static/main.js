@@ -141,7 +141,7 @@ function hideLoadingIndicator() {
         loadingDiv.remove();
     }
 }
-
+// Clear chat
 function clearChat() {
     document.getElementById('chat-container').replaceChildren();
 }
