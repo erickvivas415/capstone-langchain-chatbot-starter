@@ -51,7 +51,6 @@ def answer_from_knowledgebase(message):
         return "An error occurred while retrieving the answer."
 
 def search_knowledgebase(message):
-    # Handle error if no data was entered
     try:
         if not message or not isinstance(message, str):
             raise ValueError("Invalid input. Please provide a non-empty string.")
